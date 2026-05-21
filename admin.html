@@ -188,7 +188,7 @@
 // ── Password (SHA-256 hash) ────────────────────────────────────────────────
 // Default password: DROP2024  — change via: updatePassword('newpass')
 const PW_HASH_KEY = 'drop_pw_hash';
-const DEFAULT_HASH = 'b3f3d4e8a9e6a0e6c4b0a2f0c6d8e4f2a1b5c3d7e9f0a2b4c6d8e0f2a4b6c8';
+const DEFAULT_HASH = '52fe09526bc03a2ca5b1eebcdf12d6aec6f3e86a0b70212dc3c96dbcb1491389';
 
 async function sha256(msg) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
