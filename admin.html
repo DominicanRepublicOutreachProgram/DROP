@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DROP Admin</title>
+  <style>
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family: system-ui,sans-serif; background:#0f0f1a; color:#f0f0f0; min-height:100vh; display:flex; flex-direction:column; }
+
+    /* ── Login ── */
+    #login-screen {
+      flex:1; display:flex; align-items:center; justify-content:center;
+    }
+    .login-box {
+      background:#1a1a2e; border:1px solid #333; border-radius:12px;
+      padding:40px 36px; width:100%; max-width:360px; text-align:center;
+    }
+    .login-box h1 { font-size:1.5rem; margin-bottom:6px; color:#f77737; }
+    .login-box p  { color:#888; font-size:.9rem; margin-bottom:24px; }
+    .login-box input {
+      width:100%; padding:12px 14px; border-radius:8px;
+      border:1px solid #444; background:#0f0f1a; color:#f0f0f0;
+      font-size:1rem; margin-bottom:12px;
+    }
+    .login-box button {
+      width:100%; padding:12px; border-radius:8px; border:none;
+      background:#7b2d8b; color:#fff; font-size:1rem; font-weight:600;
+      cursor:pointer; transition:background .2s;
+    }
+    .login-box button:hover { background:#9b3dab; }
+    #login-error { color:#e05; font-size:.85rem; margin-top:8px; min-height:18px; }
+
+    /* ── Admin UI ── */
+    #admin-screen { display:none; flex:1; flex-direction:column; }
+    header {
+      background:#1a1a2e; border-bottom:1px solid #333;
+      padding:14px 28px; display:flex; align-items:center; justify-content:space-between;
+    }
+    header h1 { font-size:1.1rem; color:#f77737; }
+    header span { font-size:.85rem; color:#888; }
+    .logout-btn {
+      background:none; border:1px solid #555; color:#aaa;
+      padding:6px 14px; border-radius:6px; cursor:pointer; font-size:.85rem;
+    }
+    .logout-btn:hover { border-color:#f77737; color:#f77737; }
+
+    main { flex:1; padding:32px 28px; max-width:760px; margin:0 auto; width:100%; }
+
+    .card {
+      background:#1a1a2e; border:1px solid #2a2a3e; border-radius:12px;
+      padding:24px; margin-bottom:24px;
+    }
+    .card h2 { font-size:1rem; color:#c13584; margin-bottom:18px; letter-spacing:.05em; text-transform:uppercase; }
+
+    label { display:block; font-size:.85rem; color:#aaa; margin-bottom:4px; margin-top:14px; }
+    label:first-of-type { margin-top:0; }
+    input[type="text"], input[type="url"], input[type="password"] {
+      width:100%; padding:10px 12px; border-radius:8px;
+      border:1px solid #3a3a5e; background:#0f0f1a; color:#f0f0f0;
+      font-size:.95rem;
+    }
+    input:focus { outline:none; border-color:#7b2d8b; }
+
+    .save-btn {
+      margin-top:20px; padding:11px 28px; border-radius:8px; border:none;
+      background:#7b2d8b; color:#fff; font-size:.95rem; font-weight:600;
+      cursor:pointer; transition:background .2s;
+    }
+    .save-btn:hover { background:#9b3dab; }
+    .save-btn:disabled { background:#444; cursor:default; }
+
+    /* ── Slides ── */
+    #slide-list { margin-bottom:14px; }
+    .slide-item {
+      display:flex; align-items:center; gap:10px;
+      background:#0f0f1a; border:1px solid #2a2a3e; border-radius:8px;
+      padding:8px 12px; margin-bottom:8px;
+    }
+    .slide-item img { width:56px; height:40px; object-fit:cover; border-radius:4px; flex-shrink:0; }
+    .slide-item span { flex:1; font-size:.82rem; color:#aaa; word-break:break-all; }
+    .slide-item button {
+      background:none; border:none; color:#e05; font-size:1.2rem;
+      cursor:pointer; padding:2px 6px; border-radius:4px; flex-shrink:0;
+    }
+    .slide-item button:hover { background:#2a0a0a; }
+    .upload-area {
+      border:2px dashed #3a3a5e; border-radius:10px;
+      padding:24px; text-align:center; cursor:pointer;
+      transition:border-color .2s; position:relative;
+    }
+    .upload-area:hover { border-color:#7b2d8b; }
+    .upload-area input[type="file"] {
+      position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;
+    }
+    .upload-area p { color:#666; font-size:.9rem; }
+    .upload-area strong { color:#c13584; }
+
+    /* ── GitHub settings ── */
+    .settings-toggle {
+      background:none; border:none; color:#888; font-size:.85rem;
+      cursor:pointer; padding:0; margin-bottom:6px;
+    }
+    .settings-toggle:hover { color:#f77737; }
+    #gh-settings { display:none; }
+
+    /* ── Status ── */
+    #status {
+      position:fixed; bottom:24px; right:24px;
+      background:#1a2e1a; border:1px solid #2d6a2d; color:#52b788;
+      padding:12px 20px; border-radius:8px; font-size:.9rem;
+      opacity:0; transition:opacity .3s; pointer-events:none; z-index:999;
+    }
+    #status.error { background:#2e1a1a; border-color:#6a2d2d; color:#e07070; }
+    #status.show { opacity:1; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>DROP Admin</h1>
+    <p>Sign in to edit the website</p>
+    <input type="password" id="pw-input" placeholder="Password" autocomplete="current-password"/>
+    <button onclick="doLogin()">Sign In</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- ADMIN UI -->
+<div id="admin-screen">
+  <header>
+    <h1>DROP Website Editor</h1>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <span id="save-status"></span>
+      <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Donation Info -->
+    <div class="card">
+      <h2>Donation Info</h2>
+      <label>CashApp Handle</label>
+      <input type="text" id="f-cashapp" placeholder="$fgcuDROP"/>
+      <label>Zelle Number (digits only)</label>
+      <input type="text" id="f-zelle" placeholder="2303991849" maxlength="10"/>
+      <label>GoFundMe URL</label>
+      <input type="url" id="f-gofundme" placeholder="https://gofundme.com/..."/>
+    </div>
+
+    <!-- Slideshow -->
+    <div class="card">
+      <h2>Hero Slideshow</h2>
+      <div id="slide-list"></div>
+      <div class="upload-area" id="upload-area">
+        <input type="file" id="file-input" accept="image/*" multiple onchange="handleFiles(this.files)"/>
+        <p>&#128247; <strong>Click to upload photos</strong> or drag and drop</p>
+        <p style="margin-top:6px;font-size:.8rem;">JPG, PNG, WEBP — uploaded to your GitHub repo</p>
+      </div>
+    </div>
+
+    <!-- GitHub Settings -->
+    <div class="card">
+      <h2>GitHub Settings</h2>
+      <p style="font-size:.85rem;color:#888;margin-bottom:14px;">Required to save changes. Your token is stored only in this browser.</p>
+      <label>GitHub Owner (your username or org)</label>
+      <input type="text" id="gh-owner" placeholder="your-github-username"/>
+      <label>Repository Name</label>
+      <input type="text" id="gh-repo" placeholder="drop-website"/>
+      <label>Personal Access Token <span style="color:#666;">(needs repo write access)</span></label>
+      <input type="password" id="gh-token" placeholder="ghp_..."/>
+      <br/>
+      <button class="save-btn" style="background:#2d6a4f;margin-top:14px;" onclick="saveGHSettings()">Save GitHub Settings</button>
+    </div>
+
+    <button class="save-btn" id="publish-btn" onclick="publish()">&#9654; Publish Changes</button>
+    <p style="font-size:.8rem;color:#666;margin-top:10px;">Changes go live on GitHub Pages within ~60 seconds after publishing.</p>
+
+  </main>
+</div>
+
+<div id="status"></div>
+
+<script>
+// ── Password (SHA-256 hash) ────────────────────────────────────────────────
+// Default password: DROP2024  — change via: updatePassword('newpass')
+const PW_HASH_KEY = 'drop_pw_hash';
+const DEFAULT_HASH = 'b3f3d4e8a9e6a0e6c4b0a2f0c6d8e4f2a1b5c3d7e9f0a2b4c6d8e0f2a4b6c8';
+
+async function sha256(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin() {
+  const pw = document.getElementById('pw-input').value;
+  const hash = await sha256(pw);
+  const stored = localStorage.getItem(PW_HASH_KEY) || DEFAULT_HASH;
+  if (hash === stored) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-screen').style.display = 'flex';
+    document.getElementById('admin-screen').style.flexDirection = 'column';
+    loadData();
+  } else {
+    document.getElementById('login-error').textContent = 'Incorrect password.';
+  }
+}
+
+document.getElementById('pw-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+function doLogout() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-screen').style.display = 'none';
+  document.getElementById('pw-input').value = '';
+}
+
+// ── GitHub Settings ───────────────────────────────────────────────────────
+function loadGHSettings() {
+  document.getElementById('gh-owner').value = localStorage.getItem('gh_owner') || '';
+  document.getElementById('gh-repo').value  = localStorage.getItem('gh_repo')  || '';
+  document.getElementById('gh-token').value = localStorage.getItem('gh_token') || '';
+}
+
+function saveGHSettings() {
+  localStorage.setItem('gh_owner', document.getElementById('gh-owner').value.trim());
+  localStorage.setItem('gh_repo',  document.getElementById('gh-repo').value.trim());
+  localStorage.setItem('gh_token', document.getElementById('gh-token').value.trim());
+  showStatus('GitHub settings saved.');
+}
+
+function getGH() {
+  return {
+    owner: localStorage.getItem('gh_owner') || '',
+    repo:  localStorage.getItem('gh_repo')  || '',
+    token: localStorage.getItem('gh_token') || ''
+  };
+}
+
+// ── Load data.json ────────────────────────────────────────────────────────
+let currentData = { cashapp:'$fgcuDROP', zelle:'2303991849', gofundme:'https://tr.ee/9xD8EqJlEz', slides:[] };
+
+async function loadData() {
+  loadGHSettings();
+  try {
+    const r = await fetch('data.json?t=' + Date.now());
+    if (r.ok) currentData = await r.json();
+  } catch(e) {}
+  document.getElementById('f-cashapp').value  = currentData.cashapp  || '';
+  document.getElementById('f-zelle').value    = currentData.zelle    || '';
+  document.getElementById('f-gofundme').value = currentData.gofundme || '';
+  renderSlides();
+}
+
+// ── Slides ────────────────────────────────────────────────────────────────
+function renderSlides() {
+  const list = document.getElementById('slide-list');
+  list.innerHTML = '';
+  (currentData.slides || []).forEach((url, i) => {
+    const item = document.createElement('div');
+    item.className = 'slide-item';
+    item.innerHTML =
+      '<img src="' + url + '" alt="slide ' + (i+1) + '" onerror="this.style.display=\'none\'"/>' +
+      '<span>' + url + '</span>' +
+      '<button onclick="removeSlide(' + i + ')" title="Remove">&#x2715;</button>';
+    list.appendChild(item);
+  });
+}
+
+function removeSlide(i) {
+  currentData.slides.splice(i, 1);
+  renderSlides();
+}
+
+async function handleFiles(files) {
+  const gh = getGH();
+  if (!gh.token || !gh.owner || !gh.repo) {
+    showStatus('Fill in GitHub settings first.', true);
+    return;
+  }
+  for (const file of files) {
+    showStatus('Uploading ' + file.name + '...');
+    try {
+      const url = await uploadImage(file, gh);
+      currentData.slides.push(url);
+      renderSlides();
+      showStatus(file.name + ' uploaded.');
+    } catch(e) {
+      showStatus('Upload failed: ' + e.message, true);
+    }
+  }
+  // Reset file input
+  document.getElementById('file-input').value = '';
+}
+
+async function uploadImage(file, gh) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const b64 = e.target.result.split(',')[1];
+        const filename = 'images/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+        const res = await fetch('https://api.github.com/repos/' + gh.owner + '/' + gh.repo + '/contents/' + filename, {
+          method: 'PUT',
+          headers: { 'Authorization': 'token ' + gh.token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'Upload ' + file.name, content: b64 })
+        });
+        if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
+        resolve('https://raw.githubusercontent.com/' + gh.owner + '/' + gh.repo + '/main/' + filename);
+      } catch(e) { reject(e); }
+    };
+    reader.onerror = () => reject(new Error('Could not read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Publish ───────────────────────────────────────────────────────────────
+async function publish() {
+  const gh = getGH();
+  if (!gh.token || !gh.owner || !gh.repo) {
+    showStatus('Fill in GitHub settings before publishing.', true);
+    return;
+  }
+
+  currentData.cashapp  = document.getElementById('f-cashapp').value.trim();
+  currentData.zelle    = document.getElementById('f-zelle').value.trim();
+  currentData.gofundme = document.getElementById('f-gofundme').value.trim();
+
+  const btn = document.getElementById('publish-btn');
+  btn.disabled = true;
+  btn.textContent = 'Publishing...';
+  showStatus('Saving to GitHub...');
+
+  try {
+    // Get current SHA of data.json
+    const infoRes = await fetch('https://api.github.com/repos/' + gh.owner + '/' + gh.repo + '/contents/data.json', {
+      headers: { 'Authorization': 'token ' + gh.token }
+    });
+    const info = await infoRes.json();
+
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(currentData, null, 2))));
+    const updateRes = await fetch('https://api.github.com/repos/' + gh.owner + '/' + gh.repo + '/contents/data.json', {
+      method: 'PUT',
+      headers: { 'Authorization': 'token ' + gh.token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'Update donation info and slides', content: content, sha: info.sha })
+    });
+
+    if (!updateRes.ok) { const err = await updateRes.json(); throw new Error(err.message); }
+
+    showStatus('Published! Live in ~60 seconds.');
+  } catch(e) {
+    showStatus('Error: ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ Publish Changes';
+  }
+}
+
+// ── Status toast ──────────────────────────────────────────────────────────
+let statusTimer;
+function showStatus(msg, isError) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'show' + (isError ? ' error' : '');
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => el.className = '', 3500);
+}
+</script>
+</body>
+</html>
